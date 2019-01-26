@@ -28,7 +28,8 @@ using `matplotlib`:
 import farbfeld
 import matplotlib.pyplot as plt
 
-data = farbfeld.read(data, normalize=True)
-plt.imshow(data, interpolation='nearest');
-plt.show()
+with open('image.ff', 'rb') as f:
+    data = farbfeld.read(data, normalize=True)
+    plt.imshow(data, interpolation='nearest')
+    plt.show()
 ```
