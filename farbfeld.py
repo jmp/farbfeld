@@ -39,6 +39,9 @@ HEADER_STRUCT = struct.Struct('>8s2L')
 # each being 16-bit unsigned big-endian integers.
 PIXEL_STRUCT = struct.Struct('>4H')
 
+# Since each component is 16-bits, this is the maximum value
+COMPONENT_MAX = 2**16 - 1
+
 
 class InvalidFormat(Exception):
     """
@@ -71,6 +74,18 @@ def _read_header(data):
     return width, height
 
 
+def _normalize(rgba):
+    """
+    Scales the components of the given RGBA values to the range [0, 1].
+
+    :param rgba: components to scale.
+    :type rgba: tuple of int
+    :return: normalized components.
+    :rtype: list of int
+    """
+    return [value / COMPONENT_MAX for value in rgba]
+
+
 def _read_pixels(buffer, width, height, normalize=False):
     """
     Unpacks pixels from the given buffer.
@@ -92,8 +107,9 @@ def _read_pixels(buffer, width, height, normalize=False):
     while offset < num_bytes:
         rgba = PIXEL_STRUCT.unpack_from(buffer, offset)
         if normalize:
-            rgba = [value / (2**16 - 1) for value in rgba]
-        column.append(list(rgba))
+            column.append(_normalize(rgba))
+        else:
+            column.append(list(rgba))
         if len(column) >= width:
             rows.append(column)
             column = []
