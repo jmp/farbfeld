@@ -29,7 +29,7 @@ import farbfeld
 import matplotlib.pyplot as plt
 
 with open('image.ff', 'rb') as f:
-    data = farbfeld.read(data, normalize=True)
+    data = farbfeld.read(f.read(), normalize=True)
     plt.imshow(data, interpolation='nearest')
     plt.show()
 ```
