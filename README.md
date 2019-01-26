@@ -7,6 +7,14 @@ Currently it only has one public function, `farbfeld.read`.
 It returns the pixels as row by row, column by column as
 a nested list.
 
+## Installation
+
+The module is available on PyPI: https://pypi.org/project/farbfeld/
+
+You can install it with `pip`:
+
+    pip install farbfeld
+
 ## Usage
 
 To read an image, open the desired file and read the pixels
