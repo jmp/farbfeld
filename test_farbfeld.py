@@ -9,6 +9,17 @@ class TestReadBytes(unittest.TestCase):
     def test_read_header_only(self):
         self.assertRaises(farbfeld.InvalidFormat, farbfeld.read, b'farbfeld')
 
+    def test_read_wrong_header_no_data(self):
+        self.assertRaises(farbfeld.InvalidFormat, farbfeld.read, b'dlefbraf')
+
+    def test_read_correct_data_wrong_header(self):
+        self.assertRaises(farbfeld.InvalidFormat, farbfeld.read, (
+            b'dlefbraf'  # magic
+            b'\x00\x00\x00\x01'  # width
+            b'\x00\x00\x00\x01'  # height
+            b'\x01\x02\x03\x04\x05\x06\x07\x08'  # RGBA
+        ))
+
     def test_read_valid_but_no_pixels(self):
         pixels = farbfeld.read((
             b'farbfeld'  # magic
