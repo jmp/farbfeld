@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 
 from os import path
-from distutils.core import setup
+from setuptools import setup
 
 
 # Read long description from README.md
@@ -13,6 +13,7 @@ with open(path.join(root_dir, 'README.md'), encoding='utf-8') as f:
 setup(
     name="farbfeld",
     version="0.1.0",
+    license="MIT",
     description="Loader for the farbfeld image format.",
     long_description=long_description,
     long_description_content_type='text/markdown',
@@ -20,6 +21,7 @@ setup(
     author_email="jmp@python.mail.kapsi.fi",
     url="https://github.com/jmp/farbfeld",
     py_modules=["farbfeld"],
+    platforms=["any"],
     classifiers=[
         "Programming Language :: Python :: 3",
         "License :: OSI Approved :: MIT License",
