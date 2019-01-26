@@ -1,20 +1,50 @@
+"""
+Module for working with the farbfile image format.
+
+This module can be used to read pixel data from farbfeld image files.
+The image format consists of the bytes 'farbfeld' followed by the
+image width and height as 32-bit unsigned big-endian integers. After
+these, the actual image data is of length width*height and consists
+of four-component (RGBA) pixels, each component being 16-bit unsigned
+big-endian integers.
+
+To read a farbfile image:
+
+>>> with open('image.ff', 'rb') as f:
+...     data = read(f.read())
+
+This will return the pixels as a nested list: the first list contains
+the pixels on the first row, the second list contains the second row,
+and so on. Each pixels is in turn a list containing four components.
+
+Note that the pixel components are 16-bit unsigned integers, so the
+values are between 0 and 65535. You can scale them to the [0, 1]
+range by using the 'normalize' argument:
+
+>>> with open('image.ff', 'rb') as f:
+...     data = read(f.read(), normalize=True)
+"""
+
 import struct
 
 
 # The file begins with eight magic bytes
-_header_magic = b'farbfeld'
+HEADER_MAGIC = b'farbfeld'
 
 # Following the magic bytes are width and
 # height as 32-bit unsigned big-endian integers.
-_header_struct = struct.Struct('>8s2L')
+HEADER_STRUCT = struct.Struct('>8s2L')
 
 # After that are pixel components (RGBA),
 # each being 16-bit unsigned big-endian integers.
-_pixel_struct = struct.Struct('>4H')
+PIXEL_STRUCT = struct.Struct('>4H')
 
 
 class InvalidFormat(Exception):
-    pass
+    """
+    Raised if the file header is invalid, or the file
+    is otherwise formatted in an invalid way.
+    """
 
 
 def _read_header(data):
@@ -28,14 +58,14 @@ def _read_header(data):
     :rtype: (int, int)
     """
     # Unpack header
-    header = data[:_header_struct.size]
+    header = data[:HEADER_STRUCT.size]
     try:
-        magic, width, height = _header_struct.unpack(header)
+        magic, width, height = HEADER_STRUCT.unpack(header)
     except struct.error:
         raise InvalidFormat('invalid header format')
 
     # Make sure it's a farbfeld file
-    if magic != _header_magic:
+    if magic != HEADER_MAGIC:
         raise InvalidFormat('invalid header signature')
 
     return width, height
@@ -58,16 +88,16 @@ def _read_pixels(buffer, width, height, normalize=False):
     rows = []
     column = []
     offset = 0
-    num_bytes = width * height * _pixel_struct.size
+    num_bytes = width * height * PIXEL_STRUCT.size
     while offset < num_bytes:
-        rgba = _pixel_struct.unpack_from(buffer, offset)
+        rgba = PIXEL_STRUCT.unpack_from(buffer, offset)
         if normalize:
             rgba = [value / (2**16 - 1) for value in rgba]
         column.append(list(rgba))
         if len(column) >= width:
             rows.append(column)
             column = []
-        offset += _pixel_struct.size
+        offset += PIXEL_STRUCT.size
     return rows
 
 
@@ -86,6 +116,6 @@ def read(data, normalize=False):
     :rtype: list
     """
     width, height = _read_header(data)
-    pixel_data = data[_header_struct.size:]
+    pixel_data = data[HEADER_STRUCT.size:]
     pixels = _read_pixels(pixel_data, width, height, normalize)
     return pixels
