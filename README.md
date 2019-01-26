@@ -27,7 +27,7 @@ from it using `farbfeld.read`:
 import farbfeld
 
 with open('image.ff', 'rb') as f:
-    data = farbfeld.read(f.read())
+    data = farbfeld.read(f)
 ```
 
 Since farbfeld stores pixel components as 16-bit unsigned
@@ -40,7 +40,7 @@ import farbfeld
 import matplotlib.pyplot as plt
 
 with open('image.ff', 'rb') as f:
-    data = farbfeld.read(f.read(), normalize=True)
+    data = farbfeld.read(f, normalize=True)
     plt.imshow(data, interpolation='nearest')
     plt.show()
 ```

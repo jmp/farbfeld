@@ -11,7 +11,7 @@ big-endian integers.
 To read a farbfile image:
 
 >>> with open('image.ff', 'rb') as f:
-...     data = read(f.read())
+...     data = read(f)
 
 This will return the pixels as a nested list: the first list contains
 the pixels on the first row, the second list contains the second row,
@@ -22,7 +22,7 @@ values are between 0 and 65535. You can scale them to the [0, 1]
 range by using the 'normalize' argument:
 
 >>> with open('image.ff', 'rb') as f:
-...     data = read(f.read(), normalize=True)
+...     data = read(f, normalize=True)
 """
 
 import struct
@@ -56,13 +56,13 @@ def _read_header(data):
     and returns the image width and height based on it.
 
     :param data: image data.
-    :type data: bytes
+    :type data: io.RawIOBase
     :return: tuple containing the image width and height.
     :rtype: (int, int)
     """
     # Unpack header
-    header = data[:HEADER_STRUCT.size]
     try:
+        header = data.read(HEADER_STRUCT.size)
         magic, width, height = HEADER_STRUCT.unpack(header)
     except struct.error:
         raise InvalidFormat('invalid header format')
@@ -91,7 +91,7 @@ def _read_pixels(buffer, width, height, normalize=False):
     Unpacks pixels from the given buffer.
 
     :param buffer: raw pixel data to read from.
-    :type buffer: bytes
+    :type buffer: io.RawIOBase
     :param width: image width
     :type width: int
     :param height: image height
@@ -102,10 +102,9 @@ def _read_pixels(buffer, width, height, normalize=False):
     """
     rows = []
     column = []
-    offset = 0
-    num_bytes = width * height * PIXEL_STRUCT.size
-    while offset < num_bytes:
-        rgba = PIXEL_STRUCT.unpack_from(buffer, offset)
+    num_pixels = 0
+    max_pixels = width * height
+    for rgba in PIXEL_STRUCT.iter_unpack(buffer.read()):
         if normalize:
             column.append(_normalize(rgba))
         else:
@@ -113,7 +112,9 @@ def _read_pixels(buffer, width, height, normalize=False):
         if len(column) >= width:
             rows.append(column)
             column = []
-        offset += PIXEL_STRUCT.size
+        num_pixels += 1
+    if num_pixels != max_pixels:
+        raise InvalidFormat("number of pixels does not match header")
     return rows
 
 
@@ -125,13 +126,12 @@ def read(data, normalize=False):
     the pixels on that row as a list [r, g, b, a].
 
     :param data: bytes to read as an image.
-    :type data: raw image file
+    :type data: io.RawIOBase
     :param normalize: scale the pixel components to the [0, 1] range.
     :type normalize: bool
     :return: list of pixels
     :rtype: list
     """
     width, height = _read_header(data)
-    pixel_data = data[HEADER_STRUCT.size:]
-    pixels = _read_pixels(pixel_data, width, height, normalize)
+    pixels = _read_pixels(data, width, height, normalize)
     return pixels

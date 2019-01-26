@@ -1,19 +1,32 @@
+import io
 import unittest
 import farbfeld
 
 
 class TestReadBytes(unittest.TestCase):
     def test_read_empty_data(self):
-        self.assertRaises(farbfeld.InvalidFormat, farbfeld.read, b'')
+        self.assertRaises(
+            farbfeld.InvalidFormat,
+            farbfeld.read,
+            io.BytesIO(b''),
+        )
 
     def test_read_header_only(self):
-        self.assertRaises(farbfeld.InvalidFormat, farbfeld.read, b'farbfeld')
+        self.assertRaises(
+            farbfeld.InvalidFormat,
+            farbfeld.read,
+            io.BytesIO(b'farbfeld'),
+        )
 
     def test_read_wrong_header_no_data(self):
-        self.assertRaises(farbfeld.InvalidFormat, farbfeld.read, b'dlefbraf')
+        self.assertRaises(
+            farbfeld.InvalidFormat,
+            farbfeld.read,
+            io.BytesIO(b'dlefbraf'),
+        )
 
     def test_read_correct_data_wrong_header(self):
-        self.assertRaises(farbfeld.InvalidFormat, farbfeld.read, (
+        self.assertRaises(farbfeld.InvalidFormat, farbfeld.read, io.BytesIO(
             b'dlefbraf'  # magic
             b'\x00\x00\x00\x01'  # width
             b'\x00\x00\x00\x01'  # height
@@ -21,15 +34,40 @@ class TestReadBytes(unittest.TestCase):
         ))
 
     def test_read_valid_but_no_pixels(self):
-        pixels = farbfeld.read((
+        pixels = farbfeld.read(io.BytesIO(
             b'farbfeld'  # magic
             b'\x00\x00\x00\x00'  # width
             b'\x00\x00\x00\x00'  # height
         ))
         self.assertListEqual([], pixels)
 
+    def test_read_valid_but_too_few_pixels(self):
+        self.assertRaises(
+            farbfeld.InvalidFormat,
+            farbfeld.read,
+            io.BytesIO(
+                b'farbfeld'  # magic
+                b'\x00\x00\x00\x01'  # width
+                b'\x00\x00\x00\x02'  # height
+                b'\xff\xff\xff\xff\xff\xff\xff\xff'  # RGBA
+            ),
+        )
+
+    def test_read_valid_but_too_many_pixels(self):
+        self.assertRaises(
+            farbfeld.InvalidFormat,
+            farbfeld.read,
+            io.BytesIO(
+                b'farbfeld'  # magic
+                b'\x00\x00\x00\x01'  # width
+                b'\x00\x00\x00\x01'  # height
+                b'\xff\xff\xff\xff\xff\xff\xff\xff'  # RGBA
+                b'\xff\xff\xff\xff\xff\xff\xff\xff'  # RGBA
+            ),
+        )
+
     def test_read_zero_width(self):
-        pixels = farbfeld.read((
+        pixels = farbfeld.read(io.BytesIO(
             b'farbfeld'  # magic
             b'\x00\x00\x00\x00'  # width
             b'\x00\x00\x00\x01'  # height
@@ -37,7 +75,7 @@ class TestReadBytes(unittest.TestCase):
         self.assertListEqual([], pixels)
 
     def test_read_zero_height(self):
-        pixels = farbfeld.read((
+        pixels = farbfeld.read(io.BytesIO(
             b'farbfeld'  # magic
             b'\x00\x00\x00\x01'  # width
             b'\x00\x00\x00\x00'  # height
@@ -45,7 +83,7 @@ class TestReadBytes(unittest.TestCase):
         self.assertListEqual([], pixels)
 
     def test_read_single_pixel(self):
-        pixels = farbfeld.read((
+        pixels = farbfeld.read(io.BytesIO(
             b'farbfeld'  # magic
             b'\x00\x00\x00\x01'  # width
             b'\x00\x00\x00\x01'  # height
@@ -54,7 +92,7 @@ class TestReadBytes(unittest.TestCase):
         self.assertListEqual([[[32, 64, 128, 255]]], pixels)
 
     def test_read_two_by_two(self):
-        pixels = farbfeld.read((
+        pixels = farbfeld.read(io.BytesIO(
             b'farbfeld'  # magic
             b'\x00\x00\x00\x02'  # width
             b'\x00\x00\x00\x02'  # height
@@ -69,7 +107,7 @@ class TestReadBytes(unittest.TestCase):
         ], pixels)
 
     def test_read_normalize(self):
-        pixels = farbfeld.read((
+        pixels = farbfeld.read(io.BytesIO(
             b'farbfeld'  # magic
             b'\x00\x00\x00\x02'  # width
             b'\x00\x00\x00\x02'  # height
