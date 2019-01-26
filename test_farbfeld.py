@@ -56,3 +56,18 @@ class TestReadBytes(unittest.TestCase):
             [[1, 2, 3, 4], [5, 6, 7, 8]],
             [[9, 10, 11, 12], [13, 14, 15, 16]]
         ], pixels)
+
+    def test_read_normalize(self):
+        pixels = farbfeld.read((
+            b'farbfeld'  # magic
+            b'\x00\x00\x00\x02'  # width
+            b'\x00\x00\x00\x02'  # height
+            b'\x00\x00\x00\x00\x00\x00\xff\xff'  # RGBA
+            b'\xff\xff\xff\xff\xff\xff\xff\xff'  # RGBA
+            b'\x33\x33\x33\x33\x33\x33\xff\xff'  # RGBA
+            b'\x66\x66\x66\x66\x66\x66\xff\xff'  # RGBA
+        ), normalize=True)
+        self.assertListEqual([
+            [[0.0, 0.0, 0.0, 1.0], [1.0, 1.0, 1.0, 1.0]],
+            [[0.2, 0.2, 0.2, 1.0], [0.4, 0.4, 0.4, 1.0]]
+        ], pixels)

@@ -18,6 +18,15 @@ class InvalidFormat(Exception):
 
 
 def _read_header(data):
+    """
+    Extracts the header part from the given data, validates it,
+    and returns the image width and height based on it.
+
+    :param data: image data.
+    :type data: bytes
+    :return: tuple containing the image width and height.
+    :rtype: (int, int)
+    """
     # Unpack header
     header = data[:_header_struct.size]
     try:
@@ -32,13 +41,28 @@ def _read_header(data):
     return width, height
 
 
-def _read_pixels(buffer, width, height):
+def _read_pixels(buffer, width, height, normalize=False):
+    """
+    Unpacks pixels from the given buffer.
+
+    :param buffer: raw pixel data to read from.
+    :type buffer: bytes
+    :param width: image width
+    :type width: int
+    :param height: image height
+    :type height: int
+    :param normalize: scale pixel components to the [0, 1] range
+    :return: pixel data as a nested list.
+    :rtype: list
+    """
     rows = []
     column = []
     offset = 0
     num_bytes = width * height * _pixel_struct.size
     while offset < num_bytes:
         rgba = _pixel_struct.unpack_from(buffer, offset)
+        if normalize:
+            rgba = [value / (2**16 - 1) for value in rgba]
         column.append(list(rgba))
         if len(column) >= width:
             rows.append(column)
@@ -47,7 +71,7 @@ def _read_pixels(buffer, width, height):
     return rows
 
 
-def read(data):
+def read(data, normalize=False):
     """
     Reads the given raw image data (for example the contents of a file)
     and returns the corresponding pixels as a list. The list contains
@@ -55,10 +79,13 @@ def read(data):
     the pixels on that row as a list [r, g, b, a].
 
     :param data: bytes to read as an image.
+    :type data: raw image file
+    :param normalize: scale the pixel components to the [0, 1] range.
+    :type normalize: bool
     :return: list of pixels
     :rtype: list
     """
     width, height = _read_header(data)
     pixel_data = data[_header_struct.size:]
-    pixels = _read_pixels(pixel_data, width, height)
+    pixels = _read_pixels(pixel_data, width, height, normalize)
     return pixels
