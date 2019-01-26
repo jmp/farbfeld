@@ -2,6 +2,7 @@
 
 [![Build Status](https://travis-ci.org/jmp/farbfeld.svg?branch=master)](https://travis-ci.org/jmp/farbfeld)
 [![codecov](https://codecov.io/gh/jmp/farbfeld/branch/master/graph/badge.svg)](https://codecov.io/gh/jmp/farbfeld)
+[![Language grade: Python](https://img.shields.io/lgtm/grade/python/g/jmp/farbfeld.svg)](https://lgtm.com/projects/g/jmp/farbfeld/context:python)
 
 This is a small Python module for extracting pixel data from
 farbfeld images: https://tools.suckless.org/farbfeld/
