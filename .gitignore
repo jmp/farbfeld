@@ -1,4 +1,5 @@
 .idea
+.coverage
 build
 dist
 __pycache__
