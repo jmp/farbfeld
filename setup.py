@@ -9,5 +9,5 @@ setup(
     author='Jarkko Piiroinen',
     author_email='jmp@python.mail.kapsi.fi',
     url='https://github.com/jmp/farbfeld',
-    packages=['farbfeld'],
+    py_modules=['farbfeld'],
 )
