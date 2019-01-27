@@ -74,53 +74,57 @@ def _read_header(data):
     return width, height
 
 
-def _normalize(rgba):
+def _normalize_pixels(pixels):
     """
-    Scales the components of the given RGBA values to the range [0, 1].
+    Scales the components of given pixels to the range [0, 1].
 
-    :param rgba: components to scale.
-    :type rgba: tuple of int
-    :return: normalized components.
-    :rtype: list of int
+    :param pixels: pixels to scale
+    :type pixels: list
     """
-    return [value / COMPONENT_MAX for value in rgba]
+    for i, pixel in enumerate(pixels):
+        pixels[i] = [component / COMPONENT_MAX for component in pixel]
 
 
-def _read_pixels(buffer, width, height, normalize=False):
+def _read_pixels(buffer, count):
     """
     Unpacks pixels from the given buffer.
 
     :param buffer: raw pixel data to read from.
     :type buffer: typing.BinaryIO
-    :param width: image width
-    :type width: int
-    :param height: image height
-    :type height: int
-    :param normalize: scale pixel components to the [0, 1] range
+    :param count: number of pixels to read
+    :type count: int
     :return: pixel data as a nested list.
     :rtype: list
     """
-    rows = []
-    column = []
-    num_pixels = 0
-    max_pixels = width * height
+    pixels = []
     try:
+        # Unpack the buffer pixel by pixel
         for rgba in PIXEL_STRUCT.iter_unpack(buffer.read()):
-            if normalize:
-                column.append(_normalize(rgba))
-            else:
-                column.append(list(rgba))
-            # Move on to the next row
-            if len(column) >= width:
-                rows.append(column)
-                column = []
-            num_pixels += 1
+            pixels.append(list(rgba))
     except struct.error:
-        raise InvalidFormat("invalid pixels")
+        # Some components are missing
+        raise InvalidFormat("incomplete pixels")
 
-    # At this point we could've gotten either too few or too many pixels
-    if num_pixels != max_pixels:
+    # Make sure we got the correct amount of pixels
+    if len(pixels) != count:
         raise InvalidFormat("number of pixels does not match header")
+
+    return pixels
+
+
+def _group_pixels(pixels, num_rows):
+    """
+    Group the given pixels into a nested list containing rows of pixels.
+
+    :param pixels:
+    :param num_rows: Number of rows in each
+    :return: pixels grouped by row
+    """
+    offset = 0
+    rows = []
+    while offset < len(pixels):
+        rows.append(pixels[offset:offset + num_rows])
+        offset += num_rows
     return rows
 
 
@@ -141,5 +145,7 @@ def read(data, normalize=False):
     :rtype: list
     """
     width, height = _read_header(data)
-    pixels = _read_pixels(data, width, height, normalize)
-    return pixels
+    pixels = _read_pixels(data, width * height)
+    if normalize:
+        _normalize_pixels(pixels)
+    return _group_pixels(pixels, width)
