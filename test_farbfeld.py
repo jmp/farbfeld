@@ -82,6 +82,18 @@ class TestReadBytes(unittest.TestCase):
         ))
         self.assertListEqual([], pixels)
 
+    def test_read_incomplete_pixel(self):
+        self.assertRaises(
+            farbfeld.InvalidFormat,
+            farbfeld.read,
+            io.BytesIO(
+                b'farbfeld'  # magic
+                b'\x00\x00\x00\x01'  # width
+                b'\x00\x00\x00\x01'  # height
+                b'\x00\x20\x00\x40\x00\x80\x00'  # RGBA
+            ),
+        )
+
     def test_read_single_pixel(self):
         pixels = farbfeld.read(io.BytesIO(
             b'farbfeld'  # magic

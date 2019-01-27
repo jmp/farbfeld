@@ -104,16 +104,20 @@ def _read_pixels(buffer, width, height, normalize=False):
     column = []
     num_pixels = 0
     max_pixels = width * height
-    for rgba in PIXEL_STRUCT.iter_unpack(buffer.read()):
-        if normalize:
-            column.append(_normalize(rgba))
-        else:
-            column.append(list(rgba))
-        # Move on to the next row
-        if len(column) >= width:
-            rows.append(column)
-            column = []
-        num_pixels += 1
+    try:
+        for rgba in PIXEL_STRUCT.iter_unpack(buffer.read()):
+            if normalize:
+                column.append(_normalize(rgba))
+            else:
+                column.append(list(rgba))
+            # Move on to the next row
+            if len(column) >= width:
+                rows.append(column)
+                column = []
+            num_pixels += 1
+    except struct.error:
+        raise InvalidFormat("invalid pixels")
+
     # At this point we could've gotten either too few or too many pixels
     if num_pixels != max_pixels:
         raise InvalidFormat("number of pixels does not match header")
