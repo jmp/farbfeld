@@ -56,7 +56,7 @@ def _read_header(data):
     and returns the image width and height based on it.
 
     :param data: image data.
-    :type data: io.RawIOBase
+    :type data: typing.BinaryIO
     :return: tuple containing the image width and height.
     :rtype: (int, int)
     """
@@ -91,7 +91,7 @@ def _read_pixels(buffer, width, height, normalize=False):
     Unpacks pixels from the given buffer.
 
     :param buffer: raw pixel data to read from.
-    :type buffer: io.RawIOBase
+    :type buffer: typing.BinaryIO
     :param width: image width
     :type width: int
     :param height: image height
@@ -109,10 +109,12 @@ def _read_pixels(buffer, width, height, normalize=False):
             column.append(_normalize(rgba))
         else:
             column.append(list(rgba))
+        # Move on to the next row
         if len(column) >= width:
             rows.append(column)
             column = []
         num_pixels += 1
+    # At this point we could've gotten either too few or too many pixels
     if num_pixels != max_pixels:
         raise InvalidFormat("number of pixels does not match header")
     return rows
@@ -125,8 +127,10 @@ def read(data, normalize=False):
     another list for each row of the image, and each nested list contains
     the pixels on that row as a list [r, g, b, a].
 
+    Optionally, the pixel components can be normalized to the [0, 1] range.
+
     :param data: bytes to read as an image.
-    :type data: io.RawIOBase
+    :type data: typing.BinaryIO
     :param normalize: scale the pixel components to the [0, 1] range.
     :type normalize: bool
     :return: list of pixels
