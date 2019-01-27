@@ -45,3 +45,8 @@ with open('image.ff', 'rb') as f:
     plt.imshow(data, interpolation='nearest')
     plt.show()
 ```
+
+## Source code
+
+The source code is available on GitHub:
+https://github.com/jmp/farbfeld
