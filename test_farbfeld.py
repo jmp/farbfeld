@@ -3,7 +3,7 @@ import unittest
 import farbfeld
 
 
-class TestReadBytes(unittest.TestCase):
+class ReadTest(unittest.TestCase):
     def test_read_empty_data(self):
         self.assertRaises(
             farbfeld.InvalidFormat,
@@ -115,20 +115,122 @@ class TestReadBytes(unittest.TestCase):
         ))
         self.assertListEqual([
             [[1, 2, 3, 4], [5, 6, 7, 8]],
-            [[9, 10, 11, 12], [13, 14, 15, 16]]
+            [[9, 10, 11, 12], [13, 14, 15, 16]],
         ], pixels)
 
-    def test_read_normalize(self):
-        pixels = farbfeld.read(io.BytesIO(
+
+class WriteTest(unittest.TestCase):
+    def test_write_invalid_data(self):
+        self.assertRaises(ValueError, farbfeld.write, io.BytesIO(), None)
+
+    def test_write_zero_height(self):
+        file = io.BytesIO()
+        farbfeld.write(file, [])
+        file.seek(0)
+        self.assertEqual(
+            file.read(),
+            b'farbfeld'  # magic
+            b'\x00\x00\x00\x00'  # width
+            b'\x00\x00\x00\x00'  # height
+        )
+
+    def test_write_zero_width(self):
+        file = io.BytesIO()
+        farbfeld.write(file, [[]])
+        file.seek(0)
+        self.assertEqual(
+            file.read(),
+            b'farbfeld'  # magic
+            b'\x00\x00\x00\x00'  # width
+            b'\x00\x00\x00\x01'  # height
+        )
+
+    def test_write_incomplete_pixels(self):
+        self.assertRaises(ValueError, farbfeld.write, io.BytesIO(), [[[]]])
+
+    def test_write_too_few_components(self):
+        self.assertRaises(
+            ValueError,
+            farbfeld.write,
+            io.BytesIO(),
+            [[[1, 2, 3]]],
+        )
+
+    def test_write_too_many_components(self):
+        self.assertRaises(
+            ValueError,
+            farbfeld.write,
+            io.BytesIO(),
+            [[[1, 2, 3, 4, 5]]],
+        )
+
+    def test_write_component_out_of_range(self):
+        self.assertRaises(
+            ValueError,
+            farbfeld.write,
+            io.BytesIO(),
+            [[[0, 0, 0, -1]]],
+        )
+        self.assertRaises(
+            ValueError,
+            farbfeld.write,
+            io.BytesIO(),
+            [[[0, 0, 0, 65536]]],
+        )
+
+    def test_write_invalid_component(self):
+        self.assertRaises(
+            ValueError,
+            farbfeld.write,
+            io.BytesIO(),
+            [[[0, 0, 0, 0.5]]],
+        )
+        self.assertRaises(
+            ValueError,
+            farbfeld.write,
+            io.BytesIO(),
+            [[[0, 0, 0, '1']]],
+        )
+        self.assertRaises(
+            ValueError,
+            farbfeld.write,
+            io.BytesIO(),
+            [[[0, 0, 0, None]]],
+        )
+
+    def test_write_inconsistent_width(self):
+        self.assertRaises(ValueError, farbfeld.write, io.BytesIO(), [[
+            [0, 0, 0, 0], [0, 0, 0, 0],  # first row, two pixels
+        ], [
+            [0, 0, 0, 0],  # second row, only one pixel
+        ]])
+
+    def test_write_single_pixel(self):
+        file = io.BytesIO()
+        farbfeld.write(file, [[[32, 64, 128, 255]]])
+        file.seek(0)
+        self.assertEqual(
+            file.read(),
+            b'farbfeld'  # magic
+            b'\x00\x00\x00\x01'  # width
+            b'\x00\x00\x00\x01'  # height
+            b'\x00\x20\x00\x40\x00\x80\x00\xff'  # RGBA
+        )
+
+    def test_write_two_by_two(self):
+        file = io.BytesIO()
+        farbfeld.write(file, [
+            [[1, 2, 3, 4], [5, 6, 7, 8]],
+            [[9, 10, 11, 12], [13, 14, 15, 16]],
+        ])
+        file.seek(0)
+        self.assertEqual(
+            file.read(),
             b'farbfeld'  # magic
             b'\x00\x00\x00\x02'  # width
             b'\x00\x00\x00\x02'  # height
-            b'\x00\x00\x00\x00\x00\x00\xff\xff'  # RGBA
-            b'\xff\xff\xff\xff\xff\xff\xff\xff'  # RGBA
-            b'\x33\x33\x33\x33\x33\x33\xff\xff'  # RGBA
-            b'\x66\x66\x66\x66\x66\x66\xff\xff'  # RGBA
-        ), normalize=True)
-        self.assertListEqual([
-            [[0.0, 0.0, 0.0, 1.0], [1.0, 1.0, 1.0, 1.0]],
-            [[0.2, 0.2, 0.2, 1.0], [0.4, 0.4, 0.4, 1.0]]
-        ], pixels)
+            b'\x00\x01\x00\x02\x00\x03\x00\x04'  # RGBA
+            b'\x00\x05\x00\x06\x00\x07\x00\x08'  # RGBA
+            b'\x00\x09\x00\x0a\x00\x0b\x00\x0c'  # RGBA
+            b'\x00\x0d\x00\x0e\x00\x0f\x00\x10'  # RGBA
+        )

@@ -31,18 +31,20 @@ with open('image.ff', 'rb') as f:
     data = farbfeld.read(f)
 ```
 
-Since farbfeld stores pixel components as 16-bit unsigned
-integers, it may be useful in some cases to normalize them
-to the [0, 1] range. Then you can visualize it, for example
-using `matplotlib`:
+Note that since farbfeld stores pixel components as 16-bit
+unsigned integers, you may have to normalize them or scale
+them to a different range (e.g. 8-bit). For example, using
+NumPy and Matplotlib:
 
 ```python
 import farbfeld
+import numpy as np
 import matplotlib.pyplot as plt
 
 with open('image.ff', 'rb') as f:
-    data = farbfeld.read(f, normalize=True)
-    plt.imshow(data, interpolation='nearest')
+    data = farbfeld.read(f)
+    data_8bit = np.array(data).astype(np.uint8)
+    plt.imshow(data_8bit, interpolation='nearest')
     plt.show()
 ```
 
