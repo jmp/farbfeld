@@ -14,7 +14,7 @@ setup(
     name="farbfeld",
     version="0.1.0",
     license="MIT",
-    description="Loader for the farbfeld image format.",
+    description="Library for reading/writing farbfeld images.",
     long_description=long_description,
     long_description_content_type='text/markdown',
     author="Jarkko Piiroinen",
@@ -27,5 +27,6 @@ setup(
         "License :: OSI Approved :: MIT License",
         "Operating System :: OS Independent",
         "Topic :: Multimedia :: Graphics",
+        "Intended Audience :: Developers",
     ],
 )
