@@ -4,12 +4,8 @@
 [![codecov](https://codecov.io/gh/jmp/farbfeld/branch/master/graph/badge.svg)](https://codecov.io/gh/jmp/farbfeld)
 [![Language grade: Python](https://img.shields.io/lgtm/grade/python/g/jmp/farbfeld.svg)](https://lgtm.com/projects/g/jmp/farbfeld/context:python)
 
-This is a small Python module for extracting pixel data from
-farbfeld images: https://tools.suckless.org/farbfeld/
-
-Currently it only has one public function, `farbfeld.read`.
-It returns the pixels as row by row, column by column as
-a nested list.
+This is a small Python module for reading and writing pixel data
+from farbfeld images (https://tools.suckless.org/farbfeld/).
 
 ## Installation
 
