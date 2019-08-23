@@ -35,9 +35,6 @@ exception will be raised.
 """
 
 
-__all__ = ['read', 'write']
-
-
 import functools
 import itertools
 import numbers
