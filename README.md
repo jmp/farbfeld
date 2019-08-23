@@ -44,6 +44,22 @@ with open('image.ff', 'rb') as f:
     plt.show()
 ```
 
+To write a farbfeld image, open the desired file and write the pixels
+into it using `farbfeld.write`:
+
+```python
+import farbfeld
+
+# An example 2x2 image
+data = [
+    [[1, 2, 3, 4], [5, 6, 7, 8]],
+    [[9, 10, 11, 12], [13, 14, 15, 16]],
+]
+
+with open('image.ff', 'wb') as f:
+    farbfeld.write(f, data)
+```
+
 ## Source code
 
 The source code is available on GitHub:
