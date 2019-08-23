@@ -152,7 +152,7 @@ def read(data):
 
 def _calculate_dimensions(data):
     """
-    Returns the with and height of the given pixel data.
+    Returns the width and height of the given pixel data.
 
     The height of the image is the number of rows in the list,
     while the width of the image is determined by the number of
