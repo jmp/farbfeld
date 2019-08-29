@@ -178,6 +178,14 @@ class WriteTest(unittest.TestCase):
             [[[0, 0, 0, 65536]]],
         )
 
+    def test_write_component_within_range(self):
+        try:
+            farbfeld.write(io.BytesIO(), [[[0, 0, 0, 0]]])
+            farbfeld.write(io.BytesIO(), [[[32767, 32767, 32767, 32767]]])
+            farbfeld.write(io.BytesIO(), [[[65535, 65535, 65535, 65535]]])
+        except ValueError:
+            self.fail('ValueError raised unexpectedly')
+
     def test_write_invalid_component(self):
         self.assertRaises(
             ValueError,

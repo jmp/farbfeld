@@ -188,7 +188,7 @@ def _validate_component(value):
     """
     if not isinstance(value, numbers.Integral):
         raise ValueError("components must be integers")
-    if value < COMPONENT_MIN or value > COMPONENT_MAX:
+    if not COMPONENT_MIN <= value <= COMPONENT_MAX:
         raise ValueError(
             "component value must be between "
             f"{COMPONENT_MIN} and {COMPONENT_MAX}"
