@@ -42,21 +42,21 @@ import struct
 
 
 # The file begins with eight magic bytes
-HEADER_MAGIC = b'farbfeld'
+HEADER_MAGIC = b"farbfeld"
 
 # Following the magic bytes are width and
 # height as 32-bit unsigned big-endian integers.
-HEADER_STRUCT = struct.Struct('>8s2L')
+HEADER_STRUCT = struct.Struct(">8s2L")
 
 # After that are pixel components (RGBA),
 # each being 16-bit unsigned big-endian integers.
-PIXEL_STRUCT = struct.Struct('>4H')
+PIXEL_STRUCT = struct.Struct(">4H")
 
 # A pixel consists of 4 components, each being
 # an 16-bit unsigned integer between 0 and 65535.
 COMPONENT_NUM = 4
 COMPONENT_MIN = 0
-COMPONENT_MAX = 2**16 - 1
+COMPONENT_MAX = 2 ** 16 - 1
 
 
 class InvalidFormat(Exception):
@@ -81,11 +81,11 @@ def _read_header(data):
         header = data.read(HEADER_STRUCT.size)
         magic, width, height = HEADER_STRUCT.unpack(header)
     except struct.error:
-        raise InvalidFormat('invalid header format')
+        raise InvalidFormat("invalid header format")
 
     # Make sure it's a farbfeld file
     if magic != HEADER_MAGIC:
-        raise InvalidFormat('invalid header signature')
+        raise InvalidFormat("invalid header signature")
 
     return width, height
 
@@ -128,7 +128,7 @@ def _group_pixels(pixels, num_rows):
     offset = 0
     rows = []
     while offset < len(pixels):
-        rows.append(pixels[offset:offset + num_rows])
+        rows.append(pixels[offset : offset + num_rows])
         offset += num_rows
     return rows
 
@@ -190,20 +190,19 @@ def _validate_component(value):
         raise ValueError("components must be integers")
     if not COMPONENT_MIN <= value <= COMPONENT_MAX:
         raise ValueError(
-            "component value must be between "
-            f"{COMPONENT_MIN} and {COMPONENT_MAX}"
+            f"component must be between {COMPONENT_MIN} and {COMPONENT_MAX}"
         )
 
 
-def _validate_items(length, item_validator, items):
+def _validate(length, validator, items):
     """
     Make sure there are exactly 'length' items, each valid according to the
     given validator. If any validation fails, ValueError is raised.
 
     :param length: expected number of items
     :type length: int
-    :param item_validator: function that validates each item
-    :type item_validator: typing.Callable
+    :param validator: function that validates each item
+    :type validator: typing.Callable
     :param items: list of items to check
     :type items: list
     :raises ValueError
@@ -211,7 +210,7 @@ def _validate_items(length, item_validator, items):
     if len(items) != length:
         raise ValueError("unexpected length")
     for item in items:
-        item_validator(item)
+        validator(item)
 
 
 def _validate_data(data, width, height):
@@ -230,21 +229,9 @@ def _validate_data(data, width, height):
     :param height: number of rows
     :type height: int
     """
-    validate_pixel = functools.partial(
-        _validate_items,
-        COMPONENT_NUM,
-        _validate_component,
-    )
-    validate_row = functools.partial(
-        _validate_items,
-        width,
-        validate_pixel,
-    )
-    validate_all = functools.partial(
-        _validate_items,
-        height,
-        validate_row,
-    )
+    validate_pixel = functools.partial(_validate, COMPONENT_NUM, _validate_component)
+    validate_row = functools.partial(_validate, width, validate_pixel)
+    validate_all = functools.partial(_validate, height, validate_row)
     validate_all(data)
 
 
