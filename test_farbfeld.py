@@ -1,3 +1,5 @@
+# pylint: disable=missing-docstring
+
 import io
 import unittest
 import farbfeld

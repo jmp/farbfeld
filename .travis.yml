@@ -9,7 +9,7 @@ install:
 
 script:
   - flake8 .
-  - pylint farbfeld.py
+  - pylint *.py
   - coverage run -m unittest
 
 after_success:

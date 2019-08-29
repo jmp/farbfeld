@@ -1,13 +1,14 @@
 #!/usr/bin/env python
+# pylint: disable=missing-docstring
 
 from os import path
 from setuptools import setup
 
 
 # Read long description from README.md
-root_dir = path.abspath(path.dirname(__file__))
-with open(path.join(root_dir, 'README.md'), encoding='utf-8') as f:
-    long_description = f.read()
+ROOT_DIR = path.abspath(path.dirname(__file__))
+with open(path.join(ROOT_DIR, 'README.md'), encoding='utf-8') as f:
+    LONG_DESCRIPTION = f.read()
 
 
 setup(
@@ -15,7 +16,7 @@ setup(
     version="0.2.1",
     license="MIT",
     description="Library for reading/writing farbfeld images.",
-    long_description=long_description,
+    long_description=LONG_DESCRIPTION,
     long_description_content_type='text/markdown',
     author="Jarkko Piiroinen",
     author_email="jmp@python.mail.kapsi.fi",
