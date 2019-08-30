@@ -35,28 +35,34 @@ exception will be raised.
 """
 
 
-import functools
-import itertools
-import numbers
-import struct
-
+from functools import partial
+from itertools import chain
+from numbers import Integral
+from struct import error, Struct
+from typing import BinaryIO, Tuple, List, Callable, TypeVar
 
 # The file begins with eight magic bytes
-HEADER_MAGIC = b'farbfeld'
+HEADER_MAGIC: bytes = b'farbfeld'
 
 # Following the magic bytes are width and
 # height as 32-bit unsigned big-endian integers.
-HEADER_STRUCT = struct.Struct('>8s2L')
+HEADER_STRUCT: Struct = Struct('>8s2L')
 
 # After that are pixel components (RGBA),
 # each being 16-bit unsigned big-endian integers.
-PIXEL_STRUCT = struct.Struct('>4H')
+PIXEL_STRUCT: Struct = Struct('>4H')
 
 # A pixel consists of 4 components, each being
 # an 16-bit unsigned integer between 0 and 65535.
-COMPONENT_NUM = 4
-COMPONENT_MIN = 0
-COMPONENT_MAX = 2**16 - 1
+COMPONENT_NUM: int = 4
+COMPONENT_MIN: int = 0
+COMPONENT_MAX: int = 2**16 - 1
+
+# Type aliases
+T = TypeVar('T')  # pylint: disable=invalid-name
+Pixel = List[int]
+Image = List[List[Pixel]]
+Validator = Callable[[T], None]
 
 
 class InvalidFormat(Exception):
@@ -66,21 +72,19 @@ class InvalidFormat(Exception):
     """
 
 
-def _read_header(data):
+def _read_header(data: BinaryIO) -> Tuple[int, int]:
     """
     Extracts the header part from the given data, validates it,
     and returns the image width and height based on it.
 
     :param data: image data.
-    :type data: typing.BinaryIO
     :return: tuple containing the image width and height.
-    :rtype: (int, int)
     """
     # Unpack header
     try:
         header = data.read(HEADER_STRUCT.size)
         magic, width, height = HEADER_STRUCT.unpack(header)
-    except struct.error:
+    except error:
         raise InvalidFormat('invalid header format')
 
     # Make sure it's a farbfeld file
@@ -90,23 +94,20 @@ def _read_header(data):
     return width, height
 
 
-def _read_pixels(buffer, count):
+def _read_pixels(buffer: BinaryIO, count: int) -> List[Pixel]:
     """
     Unpacks pixels from the given buffer.
 
     :param buffer: raw pixel data to read from.
-    :type buffer: typing.BinaryIO
     :param count: number of pixels to read
-    :type count: int
     :return: pixel data as a nested list.
-    :rtype: list
     """
     pixels = []
     try:
         # Unpack the buffer pixel by pixel
         for rgba in PIXEL_STRUCT.iter_unpack(buffer.read()):
             pixels.append(list(rgba))
-    except struct.error:
+    except error:
         # Some components are missing
         raise InvalidFormat("incomplete pixels")
 
@@ -117,12 +118,11 @@ def _read_pixels(buffer, count):
     return pixels
 
 
-def _group_pixels(pixels, num_rows):
+def _group_pixels(pixels: List[Pixel], num_rows: int) -> Image:
     """
     Group the given pixels into a nested list containing rows of pixels.
 
     :param pixels:
-    :param num_rows: Number of rows in each
     :return: pixels grouped by row
     """
     offset = 0
@@ -133,7 +133,7 @@ def _group_pixels(pixels, num_rows):
     return rows
 
 
-def read(data):
+def read(data: BinaryIO) -> Image:
     """
     Reads the given raw image data (for example the contents of a file)
     and returns the corresponding pixels as a list. The list contains
@@ -141,16 +141,14 @@ def read(data):
     the pixels on that row as a list [r, g, b, a].
 
     :param data: bytes to read as an image.
-    :type data: typing.BinaryIO
     :return: list of pixels
-    :rtype: list
     """
     width, height = _read_header(data)
     pixels = _read_pixels(data, width * height)
     return _group_pixels(pixels, width)
 
 
-def _calculate_dimensions(data):
+def _calculate_dimensions(image: Image) -> Tuple[int, int]:
     """
     Returns the width and height of the given pixel data.
 
@@ -159,16 +157,14 @@ def _calculate_dimensions(data):
     pixels on the first row. It is assumed that each row contains
     the same number of pixels.
 
-    :param data: pixel data
-    :type data: list
+    :param image: pixel data
     :return: width and height as a tuple
-    :rtype: tuple
     """
     try:
         width = 0
-        height = len(data)
+        height = len(image)
         if height != 0:
-            width = len(data[0])
+            width = len(image[0])
         return width, height
     except (IndexError, TypeError):
         # Either data is not subscribable, or the
@@ -176,17 +172,16 @@ def _calculate_dimensions(data):
         raise ValueError("invalid pixel data - could not determine dimensions")
 
 
-def _validate_component(value):
+def _validate_component(value: int) -> None:
     """
     Make sure that the value is an integer within the
     range [COMPONENT_MIN, COMPONENT_MAX]. If not, then
     a ValueError is raised.
 
     :param value: value to check
-    :type value: int
     :raises ValueError
     """
-    if not isinstance(value, numbers.Integral):
+    if not isinstance(value, Integral):
         raise ValueError("components must be integers")
     if not COMPONENT_MIN <= value <= COMPONENT_MAX:
         raise ValueError(
@@ -195,26 +190,23 @@ def _validate_component(value):
         )
 
 
-def _validate_items(length, item_validator, items):
+def _validate(length: int, validator: Validator, items: List[T]) -> None:
     """
     Make sure there are exactly 'length' items, each valid according to the
     given validator. If any validation fails, ValueError is raised.
 
     :param length: expected number of items
-    :type length: int
-    :param item_validator: function that validates each item
-    :type item_validator: typing.Callable
+    :param validator: function that validates each item
     :param items: list of items to check
-    :type items: list
     :raises ValueError
     """
     if len(items) != length:
         raise ValueError("unexpected length")
     for item in items:
-        item_validator(item)
+        validator(item)
 
 
-def _validate_data(data, width, height):
+def _validate_data(image: Image, width: int, height: int) -> None:
     """
     Make sure the given pixel data is valid:
 
@@ -223,61 +215,53 @@ def _validate_data(data, width, height):
      * Each pixel must have exactly COMPONENT_NUM components.
      * Each component must be a valid 8-bit unsigned integer.
 
-    :param data: pixel data to validate
-    :type data: list
+    :param image: pixel data to validate
     :param width: number of pixels per row
-    :type width: int
     :param height: number of rows
-    :type height: int
     """
-    validate_pixel = functools.partial(
-        _validate_items,
+    validate_pixel = partial(
+        _validate,
         COMPONENT_NUM,
         _validate_component,
     )
-    validate_row = functools.partial(
-        _validate_items,
+    validate_row = partial(
+        _validate,
         width,
         validate_pixel,
     )
-    validate_all = functools.partial(
-        _validate_items,
+    validate_all = partial(
+        _validate,
         height,
         validate_row,
     )
-    validate_all(data)
+    validate_all(image)
 
 
-def _write_header(file, width, height):
+def _write_header(file: BinaryIO, width: int, height: int) -> None:
     """
     Write the farbfeld header to the given file.
     The header contains the magic string 'farbfeld' followed by
     the width and height of the image.
 
     :param file: file to write to
-    :type file: typing.BinaryIO
     :param width: image width in pixels
-    :type width: int
     :param height: image height in pixels
-    :type height: int
     """
     file.write(HEADER_STRUCT.pack(HEADER_MAGIC, width, height))
 
 
-def _write_pixels(file, data):
+def _write_pixels(file: BinaryIO, image: Image) -> None:
     """
     Write pixel data to the given file.
 
     :param file: file to write to
-    :type file: typing.BinaryIO
-    :param data: pixels to write
-    :type data: list
+    :param image: pixels to write
     """
-    for pixel in itertools.chain.from_iterable(data):
+    for pixel in chain.from_iterable(image):
         file.write(PIXEL_STRUCT.pack(*pixel))
 
 
-def write(file, data):
+def write(file: BinaryIO, image: Image) -> None:
     """
     Write the image header and given pixel data to the given file.
 
@@ -288,11 +272,9 @@ def write(file, data):
     and valid values for each component.
 
     :param file: file to write to
-    :type file: typing.BinaryIO
-    :param data: pixels to write
-    :type data: list
+    :param image: pixels to write
     """
-    width, height = _calculate_dimensions(data)
-    _validate_data(data, width, height)
+    width, height = _calculate_dimensions(image)
+    _validate_data(image, width, height)
     _write_header(file, width, height)
-    _write_pixels(file, data)
+    _write_pixels(file, image)
