@@ -13,7 +13,7 @@ with open(path.join(ROOT_DIR, 'README.md'), encoding='utf-8') as f:
 
 setup(
     name="farbfeld",
-    version="0.2.1",
+    version="0.2.2",
     license="MIT",
     description="Library for reading/writing farbfeld images.",
     long_description=LONG_DESCRIPTION,
